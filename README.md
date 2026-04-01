@@ -63,9 +63,3 @@ Suruchi Kuamri
 
   * Undergraduate Student @ FLAME University
   * Major: Business Analytics | Minor: Digital Marketing & Communication
-
-### **Final Pro-Tip for GitHub:**
-
-When you upload this, make sure to add a folder named `plots/` and include your **Confusion Matrix** and **DullRazor Before/After** images. Referencing them in the README makes the project much more visual and impressive\!
-
-http://googleusercontent.com/interactive_content_block/0
