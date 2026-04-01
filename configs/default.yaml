@@ -1,0 +1,70 @@
+# Default configuration for HAM10000 skin-lesion classifier
+
+data:
+  # Directories that contain the raw .jpg images
+  image_dirs:
+    - data/HAM10000_images_part1
+    - data/HAM10000_images_part2
+  # CSV with columns: image_id, dx (label), ...
+  metadata_csv: data/HAM10000_metadata.csv
+  # Fraction of data used for validation
+  val_split: 0.2
+  # Random seed for the train/val split
+  split_seed: 42
+  # Number of worker processes for the DataLoader
+  num_workers: 4
+
+model:
+  # timm model name; must match a supported EfficientNet variant
+  backbone: efficientnet_b3
+  # Number of output classes (HAM10000 has 7)
+  num_classes: 7
+  # Use ImageNet pre-trained weights
+  pretrained: true
+  # Dropout probability on the classifier head
+  dropout: 0.3
+
+training:
+  # Output directory for checkpoints and logs
+  output_dir: outputs
+  # Total number of fine-tuning phases
+  # Phase 1: only head + last blocks; Phase 2: all layers
+  phases:
+    - epochs: 10
+      lr: 1.0e-3
+      unfreeze_blocks: 2   # number of EfficientNet blocks to unfreeze from the end
+    - epochs: 20
+      lr: 1.0e-4
+      unfreeze_blocks: -1  # -1 means unfreeze all layers
+  # Mini-batch size
+  batch_size: 32
+  # Adam weight decay
+  weight_decay: 1.0e-4
+  # Whether to use WeightedRandomSampler for class balancing
+  weighted_sampling: true
+
+loss:
+  # Asymmetric cost matrix C[true_class, predicted_class]
+  # Rows and columns correspond to the class order defined in class_names below.
+  # Class index mapping:
+  #   0: MEL   1: NV    2: BCC   3: AKIEC  4: BKL   5: DF    6: VASC
+  #
+  # A value of 0.0 on the diagonal means "no cost for a correct prediction".
+  # High off-diagonal values for MEL (row 0) encode the clinical cost of missing
+  # Melanoma.
+  class_names: [MEL, NV, BCC, AKIEC, BKL, DF, VASC]
+  cost_matrix:
+    #         MEL   NV   BCC  AKIEC  BKL   DF   VASC
+    - [0.0,   5.0,  4.0,  4.0,  4.0,  4.0,  4.0]  # true=MEL  (high cost for any miss)
+    - [1.5,   0.0,  1.0,  1.0,  1.0,  1.0,  1.0]  # true=NV
+    - [2.0,   1.0,  0.0,  1.0,  1.0,  1.0,  1.0]  # true=BCC
+    - [2.0,   1.0,  1.0,  0.0,  1.0,  1.0,  1.0]  # true=AKIEC
+    - [1.5,   1.0,  1.0,  1.0,  0.0,  1.0,  1.0]  # true=BKL
+    - [1.5,   1.0,  1.0,  1.0,  1.0,  0.0,  1.0]  # true=DF
+    - [1.5,   1.0,  1.0,  1.0,  1.0,  1.0,  0.0]  # true=VASC
+
+evaluation:
+  # Path to a saved model checkpoint (used by evaluate.py)
+  checkpoint: outputs/best_model.pth
+  # Directory where evaluation artefacts (plots, reports) are saved
+  results_dir: outputs/eval
